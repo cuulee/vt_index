@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+
+message Segment {
+   repeated double Segment = 1 [ packed = true ];
+}
+
+message Cast {
+	repeated int32 Cast = 1 [packed = true];
+}
+
+message Column {
+	repeated int32 Column = 1  [packed = true];
+}
+
+message Tile_Index {
+	double Lat = 1;
+	repeated string Areas = 2;
+	repeated Segment Segments = 3;
+	repeated Cast Casts = 4;
+	repeated Column Columns = 5;
+	repeated int32 Properties = 6  [packed = true];
+}
+
+
+

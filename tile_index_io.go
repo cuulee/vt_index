@@ -144,7 +144,7 @@ func Write_Tile_Index(tindex Tile_Index,tileid m.TileID,mbtile util.Mbtiles) {
 	bytevals,_ := proto.Marshal(&total_index)
 	//fmt.Printf("%+v",total_index)
 	//a := m.Center(tileid)
-	fmt.Println(tileid)
+	//fmt.Println(tileid)
 	//fmt.Println(Read_Tile_Index(bytevals,tileid).Pip(a))
 	mbtile.Add_Tile(tileid,bytevals)
 	

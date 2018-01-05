@@ -8,5 +8,3 @@ So this api creates a sqllite data structure that is used in memory to load spec
   * layersplit - takes a two layers (although each could be combined from two layers themselves) and combines them not just combining and splitting all intersecting polygons but IMPORTANTLY performing the difference on each layer as well so if say a state has an area where no zip code actually exists its still makes it into the combined layer
   * vt_index - point in polygon on a distributed scale using for as many layers / fields within each layer as you want which will be pretty cool 
  
-**Currently works but its super hacky I've rewritten both these modules like 3 times in the past 2 days.**
->>>>>>> a66414ac28fea63a51fd8c495a380856aa6bef04

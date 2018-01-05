@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-# vt_index_experiment
-
-Distributed point in polygon processing, hopefully will be pretty fast. This is like the third version of a project like this I've written each time getting quite a bit more clean. The issues before were memory footprint and while that still might be an issue I'm inclined to believe it probably wont be as big of an issue to be honest but will find out. Currently writing this while batch processing a US county set (it does take a signicant amount of time to make ~10-20 minutes with counties with something a little more dense it may take longer. Have yet to do any performance metrics or any shit like that. 
-
-It does have a much cleanier api in every aspect reading, writing, base structs, and the usage of a specific protobuf file instead of just just hacking together something with vector tile's protobuf spec. The main performance advantage this project uses compared to the one previously is it points to a structure easily interpolatble and gets the y values from ray casting via interpolation therefore, we don't need to store every unique Y. However complexity structure wise is quite a bit mroe crazy.
-=======
 # vt_index
 An api for dealing with distributed geospatial indexes about vector tiles.
 

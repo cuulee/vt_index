@@ -178,13 +178,16 @@ func Make_Xmap(coords [][][]float64, areaval map[string]interface{}, bds m.Extre
 
 	sizes := get_size_geohash(ghash)
 
+	coords = append(coords, coords[0])
 	// linting coord values
 	//coords = lint_coords(coords)
-	coords = append(coords, coords[0])
-	for ii := range coords {
-		//pre := len(coords[ii])
-		coords[ii] = rdp.RDPSimplify(coords[ii],sizes.linear)
-		//fmt.Println(len(coords[ii]),pre)
+	boolval := false 
+	if boolval == true {
+		for ii := range coords {
+			//pre := len(coords[ii])
+			coords[ii] = rdp.RDPSimplify(coords[ii],sizes.linear)
+			//fmt.Println(len(coords[ii]),pre)
+		}
 	}
 
 	// getting coords extrema

@@ -8,6 +8,7 @@ import (
 	m "github.com/murphy214/mercantile"
 	"log"
 	util "github.com/murphy214/mbtiles-util"
+
 	"os"
 	"sync"
 )
@@ -56,6 +57,7 @@ func Make_Mb_Index(feats []*geojson.Feature,zoom int,filename string) {
 
 		go func(k m.TileID,v []*geojson.Feature) {
 			temp_tile_index := Make_Xmap_Polygons(v,k)
+			//fmt.Println(temp_tile_index)
 			Write_Tile_Index(temp_tile_index,k,mbtile)
 			<-guard
 			counter += 1
@@ -104,14 +106,20 @@ func Read_Mb_Index(filename string) Mb_Index {
 		counter += 1
 		// creating properties map
 		rows.Scan(&X, &Y, &Z, &data)
-
+		Y = (1 << uint64(Z)) - Y - 1
+		//fmt.Println(Y)
 		tileid := m.TileID{X:int64(X),Y:int64(Y),Z:uint64(Z)}
+		zoom = Z
 		//bds := m.Bounds(tileid)
 		
 		// checking to see whether to add the index
 		go func(data []byte,tileid m.TileID,c chan Ind_Output) {
 			sema <- struct{}{}        // acquire token
 			defer func() { <-sema }() // release token
+			//tile_index := Read_Tile_Index(data,tileid)
+			//ex := m.Bounds(tileid)
+			//fmt.Println(tile_index.Index[geo.NewPoint(ex.W+.00000001, tile_index.Lat).GeoHash(9)])
+
 			c <- Ind_Output{TileID:tileid,Index:Read_Tile_Index(data,tileid)}
 			//cache[tileid] = index
 		}(data,tileid,c)
@@ -124,7 +132,7 @@ func Read_Mb_Index(filename string) Mb_Index {
 		count += 1
 		fmt.Printf("\r[%d/%d] Reading Cached Vector Tile Indexes",count,counter)
 	}
-	fmt.Print("\n")
+	fmt.Println(zoom)
 	return Mb_Index{Cache:cache,Zoom:zoom}
 }
 

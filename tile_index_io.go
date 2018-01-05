@@ -142,7 +142,10 @@ func Write_Tile_Index(tindex Tile_Index,tileid m.TileID,mbtile util.Mbtiles) {
 	total_index := tile_index.Tile_Index{Lat:tindex.Lat,Areas:structmap.Areas,Segments:structmap.Segments,Casts:structmap.Casts,Columns:structmap.Columns,Properties:inds}
 
 	bytevals,_ := proto.Marshal(&total_index)
-	//fmt.Println(totalmap)
+	//fmt.Printf("%+v",total_index)
+	//a := m.Center(tileid)
+	fmt.Println(tileid)
+	//fmt.Println(Read_Tile_Index(bytevals,tileid).Pip(a))
 	mbtile.Add_Tile(tileid,bytevals)
 	
 }

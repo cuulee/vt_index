@@ -27,6 +27,7 @@ type Ind_Output struct {
 type Mb_Index struct {
 	Zoom int
 	Cache map[m.TileID]Tile_Index
+	DB util.Mbtiles
 }
 
 // outer api for makign sqllite3 idnex object
@@ -48,7 +49,7 @@ func Make_Mb_Index(feats []*geojson.Feature,zoom int,filename string) {
 
     maxGoroutines := 20
     guard := make(chan struct{}, maxGoroutines)
-	
+
 	// iterating throguh each tile
 	var wg sync.WaitGroup
 	for k,v := range tilemap {
@@ -75,6 +76,34 @@ func Make_Mb_Index(feats []*geojson.Feature,zoom int,filename string) {
 	//Make_Index(db)
 
 }
+
+// outer api for makign sqllite3 idnex object
+func Make_Mb_Index_One(feats []*geojson.Feature,zoom int,filename string,k m.TileID) ([]*geojson.Feature,Tile_Index) {
+	// creating the sqllite database
+	//db := Create_Database_Meta(filename,zoom)
+
+	os.Remove(filename)
+	// getting tilemap 
+	tilemap,_ := Make_Tilemap(&geojson.FeatureCollection{Features:feats},zoom)
+
+	fmt.Println(len(tilemap))
+	//count := 0
+
+    tilemap = map[m.TileID][]*geojson.Feature{k:tilemap[k]}
+
+
+	temp_tile_index := Make_Xmap_Polygons(tilemap[k],k)
+
+
+	// inserting data
+	//Insert_Data(totalmap,db)
+	return tilemap[k],temp_tile_index
+	// making index
+	//Make_Index(db)
+
+}
+
+
 
 // reads the mb index into memory
 func Read_Mb_Index(filename string) Mb_Index {
@@ -135,6 +164,22 @@ func Read_Mb_Index(filename string) Mb_Index {
 	fmt.Println(zoom)
 	return Mb_Index{Cache:cache,Zoom:zoom}
 }
+
+// lazily opens a database
+func Read_Mb_Index_Lazy(filename string) Mb_Index {
+	mbtile := util.Read_Mbtiles(filename)
+	return Mb_Index{DB:mbtile}
+}
+
+// subquery that returns a single tile index
+func (mbindex *Mb_Index) Query(k m.TileID) Tile_Index {
+	bytes := mbindex.DB.Query(k)
+	return Read_Tile_Index(bytes,k)
+}
+
+
+
+
 
 // outer level abstraction for point in polygon
 func (mb_index Mb_Index) Pip(point []float64) map[string]interface{} {

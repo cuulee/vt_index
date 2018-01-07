@@ -18,6 +18,7 @@ Advanantages:
 
 import (
 	geo "github.com/paulmach/go.geo"
+	// /"fmt"
 )
 
 
@@ -68,11 +69,14 @@ func New_Cast(segment1 *Segment,segment2 *Segment,area map[string]interface{},x 
 
 // checks to see if a given cast structure contains the given point
 func (cast Cast) Within(point []float64) bool {
+	//fmt.Println(cast.Segment1.Slope,cast.Segment2.Slope)
 	a := cast.Segment1.Interpolate(point[0])
 	b := cast.Segment2.Interpolate(point[0])
-	return ((a >= point[1]) && ( point[1] >= b) || (a <= point[1]) && ( point[1] <= b))
-}
+	//fmt.Println(a,b,point[1])
+	//return ((a >= point[1]) && ( point[1] >= b) || (a <= point[1]) && ( point[1] <= b))
+	return (a <= point[1]) && ( point[1] <= b)
 
+}
 
 // structure representing one column of data
 // ideally this should be sorted by largest delta or something
@@ -91,6 +95,7 @@ func (column Column) Within(point []float64) *map[string]interface{} {
 	return &map[string]interface{}{}
 }
 
+
 // a tile index structure for which points can be queried
 type Tile_Index struct {
 	Index map[string]*Column
@@ -106,7 +111,6 @@ func (tile_index Tile_Index) Pip(point []float64) *map[string]interface{} {
 		return &map[string]interface{}{}
 	}
 }
-
 
 
  

@@ -16,6 +16,8 @@ import (
 	//"fmt"
 	"github.com/paulmach/go.geojson"
 	"math/rand"
+
+	//"io/ioutil"
 )
 
 
@@ -33,6 +35,13 @@ func get_size_geohash(ghash string) Size {
 	ex := get_extrema_ghash(ghash)
 	size := math.Sqrt(math.Pow(ex.N-ex.S, 2) + math.Pow(ex.E-ex.W, 2))
 	return Size{ex.E - ex.W, ex.N - ex.S, size}
+}
+
+// returns a data structure contain the size of your deltaX deltaY and linear distance (accross the box)
+// given a geohash return the linear distance from one corner to another
+func Get_size_geohash(ghash string) float64 {
+	ex := get_extrema_ghash(ghash)
+	return ex.E - ex.W
 }
 
 func geoHash2ranges2(hash string) (float64, float64, float64, float64) {
@@ -82,9 +91,9 @@ func Get_Middle(ghash string) []float64 {
 // the next point on the line and fills the appopriate geohashs between them
 // this section can be though of as the raycasting solver for geohash level we desire
 // currently defaults to size 9
-func fill_x_values(pt1 []float64, pt2 []float64, sizes Size, latconst float64) map[string]*Segment {
+func fill_x_values(pt1 []float64, pt2 []float64, sizes Size, latconst float64) map[string]Segment {
 	// creating temporary map
-	tempmap := map[string]*Segment{}
+	tempmap := map[string]Segment{}
 	seg := New_Segment(pt1,pt2)
 	if seg.Slope != 1000000.0 {
 
@@ -93,8 +102,11 @@ func fill_x_values(pt1 []float64, pt2 []float64, sizes Size, latconst float64) m
 		ghash2 := geo.NewPoint(pt2[0], pt2[1]).GeoHash(9)
 
 		// decoding each geohash to a point in space
-		long1 := geo.NewPointFromGeoHash(ghash1).Lng()
-		long2 := geo.NewPointFromGeoHash(ghash2).Lng()
+		long1 := Get_Middle(ghash1)[0]
+		long2 := Get_Middle(ghash2)[0]
+
+		//long1 := geo.NewPointFromGeoHash(ghash1).Lng()
+		//long2 := geo.NewPointFromGeoHash(ghash2).Lng()
 
 		// sorting are actual longs
 		longs := []float64{pt1[0], pt2[0]}
@@ -104,19 +116,31 @@ func fill_x_values(pt1 []float64, pt2 []float64, sizes Size, latconst float64) m
 		// this is mainly just to check the first one
 		potlongs := []float64{long1, long2}
 		sort.Float64s(potlongs)
-		xcurrent := longs[0]
+		potlongs[1] = potlongs[1] + sizes.deltaX
+		potlongs[0] = potlongs[0] - sizes.deltaX
+
+		//sizes.deltaX = sizes.deltaX 
+		xcurrent := potlongs[0]
 
 		var ghash string
 		//total := [][]float64{}
-		for xcurrent <= longs[1] {
+		//tempmap[]
+		for xcurrent <= potlongs[1] {
 			ghash = geo.NewPoint(xcurrent, latconst).GeoHash(9)
 
 			if (xcurrent >= longs[0]) && (xcurrent <= longs[1]) {
 				//total = append(total, []float64{xcurrent, pt.Y})
-				tempmap[ghash] = &seg
+				tempmap[ghash] = seg
 			}
-			xcurrent += sizes.deltaX
+			xcurrent += sizes.deltaX 
 		}
+		//if (xcurrent >= longs[0]) && (xcurrent <= longs[1]) {
+		//	ghash = geo.NewPoint(xcurrent, latconst).GeoHash(9)
+
+			//total = append(total, []float64{xcurrent, pt.Y})
+		//	tempmap[ghash] = seg
+		//}
+		//tempmap[ghash] = &seg
 
 
 	} else {
@@ -125,42 +149,82 @@ func fill_x_values(pt1 []float64, pt2 []float64, sizes Size, latconst float64) m
 
 }
 
+func Reverse(vals []float64) []float64 {
+	count := len(vals) -1
+	newvals := make([]float64,len(vals))
+	count2 := 0
+	for count != -1 {
+		newvals[count2] = vals[count]
+		count2 += 1
+		count -= 1 
+	}
+	return newvals
+}
+
+
+func Remove_Doubles(vals []float64) []float64 {
+	oldi := vals[0]
+	newvals := []float64{}
+	for _,i := range vals[1:] {
+		if oldi == i {
+			if len(newvals) > 0 {
+				newvals = newvals[:len(newvals)-1]
+			}
+		} else {
+			newvals = append(newvals,oldi)			
+		}
+	}
+	if newvals[len(newvals)-1] == oldi {
+		newvals = newvals[:len(newvals)-2]
+	} else {
+		newvals = append(newvals,oldi)
+	}	
+	return newvals
+}
+
 // sorts the segments out from a raw list of segments
-func Sort_Segments(geohash string,segments []*Segment) []*Segment {
+func Sort_Segments(geohash string,segments []Segment) []Segment {
 
 
 	// getting the middle piont
 	point := Get_Middle(geohash)
 	
 	// getting the float list and map
-	floatmap := map[float64]*Segment{}
+	floatmap := map[float64]Segment{}
 	floatlist := []float64{}
 	for _,v := range segments {
+
 		floatval := v.Interpolate(point[0])
+		//fmt.Println(floatval,v,geohash)
 		floatlist = append(floatlist,floatval)
 		floatmap[floatval] = v
+		//fmt.Println(v,floatval,geohash)
 	}
+	
+
+
+	floatlist = Unique_Floats(floatlist)
 
 	// sorting the floatlist
 	sort.Float64s(floatlist)
+	//fmt.Println(floatlist,geohash)
+	//floatlist = Remove_Doubles(floatlist)
+	//fmt.Println(floatlist,geohash)
+
+
+    for i, j := 0, len(floatlist)-1; i < j; i, j = i+1, j-1 {
+        floatlist[i], floatlist[j] = floatlist[j], floatlist[i]
+    }	//fmt.Println(floatlifloatlistt,geohafloatlisth)
 
 	// iterating through sorted floatlist
-	newsegs := []*Segment{}
+	// iterating through sorted floatlist
+	newsegs := []Segment{}
 	for _,k := range floatlist {
 		newsegs = append(newsegs,floatmap[k])
 	}
-	segments = newsegs
-	newmap := map[*Segment]string{}
-	for _,seg := range segments {
-		newmap[seg] = ""
-	}
-	newsegments := []*Segment{}
-	for k := range newmap {
-		newsegments = append(newsegments,k)
-	}
-	segments = newsegments
 
-	return segments
+
+	return newsegs
 }
 
 
@@ -169,7 +233,7 @@ func Sort_Segments(geohash string,segments []*Segment) []*Segment {
 // given a set of x,y coordinates returns a map string that will be used as the base
 // string for constructing our geohash tables
 // this is essentially the most important data structure for the algorithm
-func Make_Xmap(coords [][][]float64, areaval map[string]interface{}, bds m.Extrema) map[string]*Column {
+func Make_Xmap(coords [][][]float64, areaval map[string]interface{}, bds m.Extrema) map[string]Column {
 	// quick lint
 	N := bds.N
 
@@ -178,7 +242,6 @@ func Make_Xmap(coords [][][]float64, areaval map[string]interface{}, bds m.Extre
 
 	sizes := get_size_geohash(ghash)
 
-	coords = append(coords, coords[0])
 	// linting coord values
 	//coords = lint_coords(coords)
 	boolval := false 
@@ -194,14 +257,26 @@ func Make_Xmap(coords [][][]float64, areaval map[string]interface{}, bds m.Extre
 
 	// intialization variables
 	latconst := N - .0000000001
+	//coords = Easy_Lint(coords)
+	//coords = Lint_Polygon(coords,latconst)
+
+	coords = append(coords, coords[0])
+ 
 	oldpt := []float64{0.0,0.0}
 	count := 0
-	topmap := map[string][]*Segment{}
-
+	topmap := map[string][]Segment{}
 	for _,coord := range coords {
 		// iterating through each coordinate collecting each fill_x_values output
 		count = 0
-		coord = append(coord,coord[0])
+		lastcoord := coord[len(coord)-1]
+		firstcoord := coord[0]
+		if (firstcoord[0] == lastcoord[0]) && (firstcoord[1] == lastcoord[1]) {
+
+		} else {
+			coord = append(coord,coord[0])
+		
+		}	
+
 		for _,pt := range coord {
 			if count == 0 {
 				count = 1
@@ -218,28 +293,41 @@ func Make_Xmap(coords [][][]float64, areaval map[string]interface{}, bds m.Extre
 
 		}
 	}
-
+	
 	// creating outer level map but sorting
-	newmap := map[string]*Column{}
+	newmap := map[string]Column{}
 	for k, v := range topmap {
 		v = Sort_Segments(k,v)
-		column := &Column{}
-		newlist := []*Segment{}
+		column := Column{}
+		newlist := []Segment{}
 		//newlist2 := [][]float64{}
+		boolval := true
+		//fmt.Println(v)
+		//oldi := v[0]
 		for _,i := range v {
-			newlist = append(newlist, i)
+			newlist = append(newlist,i)
+			
 			if len(newlist) == 2 {
-				//newlist2 = append(newlist2, []float64{v[newlist[0]], v[newlist[1]]})
-				//yrows = append(yrows, Yrow{Range: []float64{v[newlist[0]], v[newlist[1]]}, Area: areastring, Y: v[newlist[0]]})
-				column.Casts = append(column.Casts,&Cast{Segment1:newlist[0],Segment2:newlist[1],Area:&areaval})
-				newlist = []*Segment{}
+
+				if boolval == true {
+					column.Casts = append(column.Casts,New_Cast(&newlist[0],&newlist[1],areaval,Get_Middle(k)[0]))
+					//column.Casts = append(column.Casts,&Cast{Segment1:newlist[0],Segment2:newlist[1],Area:&areaval})
+					//boolval = false
+					newlist = []Segment{}
+				
+				} else {
+					newlist = []Segment{}
+					//boolval = true
+
+				}
 			}
+			
 		}
 		newmap[k] = column
-		//fmt.Print(newlist2, "\n")
-		//topmap[k] = v
 
 	}
+	
+
 	//fmt.Print(len(topmap), "\n\n")
 	return newmap
 
@@ -270,9 +358,9 @@ func Lint_Total_Index(bds m.Extrema,total_index map[string]Column) map[string]Co
 // creates a tile_index from a given series of polygons and a tileid
 func Make_Xmap_Polygons(feats []*geojson.Feature,tileid m.TileID) Tile_Index {
 	bds := m.Bounds(tileid)
-	c := make(chan map[string]*Column)
+	c := make(chan map[string]Column)
 	for _,feat := range feats {
-		go func(feat *geojson.Feature,c chan map[string]*Column) {
+		go func(feat *geojson.Feature,c chan map[string]Column) {
 			c <- Make_Xmap(feat.Geometry.Polygon,feat.Properties,bds)
 		}(feat,c)
 	}
@@ -328,6 +416,68 @@ func Shit(index Tile_Index,bds m.Extrema) []*geojson.Feature {
 	}
 	return newlist
 }
+
+func Unique_Floats(input []float64) []float64 {
+	u := make([]float64, 0, len(input))
+	m := make(map[float64]bool)
+
+	for _, val := range input {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			u = append(u, val)
+		}
+	}
+
+	return u
+}
+
+
+func Easy_Lint(coords [][][]float64) [][][]float64 {
+	newcoords := [][][]float64{}
+	for _,coord := range coords {
+		newline := [][]float64{}
+		var oldpt []float64 
+		for i,pt := range coord {
+			if i != 0 {
+				if ((oldpt[0] == pt[0]) && (oldpt[1] == pt[1])) == false {
+					newline = append(newline,oldpt)
+				}
+			}
+			oldpt = pt
+		}
+		newline = append(newline,oldpt)
+		newcoords = append(newcoords,newline)
+	}
+	return newcoords
+}
+
+// 
+func Lint_Coords(coords [][]float64,latconst float64) [][]float64 {
+	var oldghash,ghash string
+	var oldpt []float64
+	newcoords := [][]float64{}
+	for i,pt := range coords {
+		ghash = geo.NewPoint(pt[0], pt[1]).GeoHash(9)
+		if i != 0 {
+			if oldghash != ghash {
+				newcoords = append(newcoords,oldpt)
+			}
+		}
+		oldghash = ghash
+		oldpt = pt
+	}
+	newcoords = append(newcoords,oldpt)
+	return newcoords
+}
+
+func Lint_Polygon(coords [][][]float64,latconst float64) [][][]float64 {
+	for i,coord := range coords {
+		coords[i] = Lint_Coords(coord,latconst)
+	}
+	return coords
+}
+
+
 
 // random point x
 func RandomPt_X(bds m.Extrema,X float64) []float64 {

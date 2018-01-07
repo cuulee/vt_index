@@ -1,10 +1,19 @@
-# vt_index
-An api for dealing with distributed geospatial indexes about vector tiles.
+# Vt_Index
 
-# What is it? 
-This is a hacky api for taking combined layers of polygons and combined them using [layersplit](https:/github.com/murphy214/layersplit) from their I take an api I wrote a while back that uses vector tiles at a defined zoom level and mapbox vector_tile pbf structure (although this may change) to provide a super fast api to perform point in polygon operations insanely fast, in that specific vector tile. (millions of points / second) This API attepts to apstract on that idea idea by wrapping the byte data of each vector tile index in a sqllite db pretty similiar to the mbtiles spec. By doing this you can build out multiplexing websockets or everything completely in memory loading only a certain amount into cache at a time. 
+Point-In-Polygon by tile processing via a interpolation engine. 
 
-So this api creates a sqllite data structure that is used in memory to load specific vector tile indexs into a map by mapping a point to a specific tile then mapping the point in that tile to a polygon that exists in it. This single polygon will could represent 100s of layers of varying layers consisting of multiple fields each. Essentially this library in conjunction with layersplit is like a super direct implementation of two pretty hard problems being:
-  * layersplit - takes a two layers (although each could be combined from two layers themselves) and combines them not just combining and splitting all intersecting polygons but IMPORTANTLY performing the difference on each layer as well so if say a state has an area where no zip code actually exists its still makes it into the combined layer
-  * vt_index - point in polygon on a distributed scale using for as many layers / fields within each layer as you want which will be pretty cool 
- 
+# File Structure 
+* **create.go** - helper functions for debugging nasty corner cases 
+* **mapx** - assembles the columns and tile_indexs for all the features within a tile (most of computation happens here) 
+* **mb_index** - a few outer level handler functions for shoving the protobuf compressed structure into an sqlite db currently
+* **poly_envelope** - a small clipping script used to create the clipping tile indexes about each tile with the structure map[m.TileID][]*geojson.Feature{}
+* **tile_index_io.go** - a set of routines for shoving a tile_index into a smaller protobuffer datastructure for serialization to file (some of the things done include flattening out arrays to only a segment array and then using index references to assemble the casts, and columns and at the top level tile_indexes respectively.
+* **tile_ind.go** - base structure for pip in polygon about one tile index 
+
+# Benchmarks 
+
+Assuming your dataset can fit into memory it should be around ~500-1000k points a second, however memory is an issue, with denser polygon sets but I will eventually construct something to reads sequentially as needed against an organized point set. 
+
+# Mimimal Example 
+
+
